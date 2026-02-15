@@ -88,6 +88,12 @@ opentelemetry = { version = "0.31", default-features = false, features = ["trace
 opentelemetry_sdk = { version = "0.31", default-features = false, features = ["trace", "metrics"] }
 opentelemetry-otlp = { version = "0.31", default-features = false, features = ["trace", "metrics", "http-proto", "reqwest-blocking-client"] }
 
+[features]
+default = []
+# Mobile feature flags for reduced binary size
+mobile-ios = []
+mobile-android = []
+
 [profile.release]
 opt-level = "z"      # Optimize for size
 lto = true          # Link-time optimization
@@ -106,3 +112,7 @@ panic = "abort"
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3.14"
+
+[lib]
+name = "zeroclaw"
+crate-type = ["rlib", "staticlib", "cdylib"]
