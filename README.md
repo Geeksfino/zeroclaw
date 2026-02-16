@@ -130,7 +130,7 @@ Every subsystem is a **trait** — swap implementations with a config change, ze
 | **Memory** | `Memory` | SQLite with hybrid search (FTS5 + vector cosine similarity), Markdown | Any persistence backend |
 | **Tools** | `Tool` | shell, file_read, file_write, memory_store, memory_recall, memory_forget, browser_open (Brave + allowlist), composio (optional) | Any capability |
 | **Observability** | `Observer` | Noop, Log, Multi | Prometheus, OTel |
-| **Runtime** | `RuntimeAdapter` | Native (Mac/Linux/Pi) | Docker, WASM (planned; unsupported kinds fail fast) |
+| **Runtime** | `RuntimeAdapter` | Native (Mac/Linux/Pi/Docker), Mobile (iOS/Android) | WASM, edge runtimes (planned) |
 | **Security** | `SecurityPolicy` | Gateway pairing, sandbox, allowlists, rate limits, filesystem scoping, encrypted secrets | — |
 | **Identity** | `IdentityConfig` | OpenClaw (markdown), AIEOS v1.1 (JSON) | Any identity format |
 | **Tunnel** | `Tunnel` | None, Cloudflare, Tailscale, ngrok, Custom | Any tunnel binary |
@@ -138,12 +138,22 @@ Every subsystem is a **trait** — swap implementations with a config change, ze
 | **Skills** | Loader | TOML manifests + SKILL.md instructions | Community skill packs |
 | **Integrations** | Registry | 50+ integrations across 9 categories | Plugin system |
 
-### Runtime support (current)
+### Runtime support
 
-- ✅ Supported today: `runtime.kind = "native"`
-- 🚧 Planned, not implemented yet: Docker / WASM / edge runtimes
+- ✅ **Production Ready:** `runtime.kind = "native"` — macOS, Linux, Windows, Raspberry Pi
+- ✅ **Container Isolation:** `runtime.kind = "docker"` — sandboxed execution with resource limits
+- 🚧 **Mobile Platforms:** `runtime.kind = "mobile-ios"` or `"mobile-android"` — restricted runtime for mobile deployment (implementation in progress)
+- 🚧 **Edge/WASM:** Cloudflare Workers, WASM runtimes (planned)
 
-When an unsupported `runtime.kind` is configured, ZeroClaw now exits with a clear error instead of silently falling back to native.
+**Platform Constraints:**
+- **Native:** Full shell and filesystem access (policy-restricted)
+- **Docker:** Isolated container, configurable memory/CPU limits, network isolation
+- **Mobile iOS:** No shell access, scoped filesystem, 50MB memory budget
+- **Mobile Android:** Limited shell (read-only commands), scoped storage, 100MB memory budget
+
+See [`docs/sandbox-mechanisms.md`](docs/sandbox-mechanisms.md) for detailed security architecture and mobile deployment guide.
+
+When an unsupported `runtime.kind` is configured, ZeroClaw exits with a clear error instead of silently falling back to native.
 
 ### Memory System (Full-Stack Search Engine)
 

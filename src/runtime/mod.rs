@@ -1,8 +1,10 @@
 pub mod docker;
+pub mod mobile;
 pub mod native;
 pub mod traits;
 
 pub use docker::DockerRuntime;
+pub use mobile::{MobilePlatform, MobileRuntime};
 pub use native::NativeRuntime;
 pub use traits::RuntimeAdapter;
 
@@ -13,13 +15,15 @@ pub fn create_runtime(config: &RuntimeConfig) -> anyhow::Result<Box<dyn RuntimeA
     match config.kind.as_str() {
         "native" => Ok(Box::new(NativeRuntime::new())),
         "docker" => Ok(Box::new(DockerRuntime::new(config.docker.clone()))),
+        "mobile-ios" => Ok(Box::new(MobileRuntime::new(MobilePlatform::IOS))),
+        "mobile-android" => Ok(Box::new(MobileRuntime::new(MobilePlatform::Android))),
         "cloudflare" => anyhow::bail!(
             "runtime.kind='cloudflare' is not implemented yet. Use runtime.kind='native' for now."
         ),
         other if other.trim().is_empty() => {
-            anyhow::bail!("runtime.kind cannot be empty. Supported values: native, docker")
+            anyhow::bail!("runtime.kind cannot be empty. Supported values: native, docker, mobile-ios, mobile-android")
         }
-        other => anyhow::bail!("Unknown runtime kind '{other}'. Supported values: native, docker"),
+        other => anyhow::bail!("Unknown runtime kind '{other}'. Supported values: native, docker, mobile-ios, mobile-android"),
     }
 }
 
@@ -83,5 +87,31 @@ mod tests {
             Err(err) => assert!(err.to_string().contains("cannot be empty")),
             Ok(_) => panic!("empty runtime should error"),
         }
+    }
+
+    #[test]
+    fn factory_mobile_ios() {
+        let cfg = RuntimeConfig {
+            kind: "mobile-ios".into(),
+            ..RuntimeConfig::default()
+        };
+        let rt = create_runtime(&cfg).unwrap();
+        assert_eq!(rt.name(), "mobile-ios");
+        assert!(!rt.has_shell_access());
+        assert!(!rt.supports_long_running());
+        assert_eq!(rt.memory_budget(), 50 * 1024 * 1024);
+    }
+
+    #[test]
+    fn factory_mobile_android() {
+        let cfg = RuntimeConfig {
+            kind: "mobile-android".into(),
+            ..RuntimeConfig::default()
+        };
+        let rt = create_runtime(&cfg).unwrap();
+        assert_eq!(rt.name(), "mobile-android");
+        assert!(rt.has_shell_access());
+        assert!(!rt.supports_long_running());
+        assert_eq!(rt.memory_budget(), 100 * 1024 * 1024);
     }
 }
