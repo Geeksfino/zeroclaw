@@ -58,7 +58,7 @@ impl MobileRuntime {
     /// ```
     pub fn new(platform: MobilePlatform) -> Self {
         let memory_limit_bytes = match platform {
-            MobilePlatform::IOS => 50 * 1024 * 1024,      // 50MB for iOS extensions
+            MobilePlatform::IOS => 50 * 1024 * 1024, // 50MB for iOS extensions
             MobilePlatform::Android => 100 * 1024 * 1024, // 100MB typical Android app
         };
 
@@ -121,7 +121,7 @@ impl RuntimeAdapter for MobileRuntime {
         match self.platform {
             // iOS third-party apps cannot access /bin/sh or spawn processes
             MobilePlatform::IOS => false,
-            
+
             // Android apps can access /system/bin/sh but with heavy restrictions
             // Only safe read-only commands should be allowed
             MobilePlatform::Android => true,
@@ -166,10 +166,12 @@ impl RuntimeAdapter for MobileRuntime {
                 // On Android, we can execute limited shell commands
                 // Only safe read-only commands are allowed
                 let base_cmd = command.split_whitespace().next().unwrap_or("");
-                
+
                 // Allowlist of safe Android commands
-                let allowed = ["ls", "cat", "grep", "find", "echo", "pwd", "wc", "head", "tail"];
-                
+                let allowed = [
+                    "ls", "cat", "grep", "find", "echo", "pwd", "wc", "head", "tail",
+                ];
+
                 if !allowed.contains(&base_cmd) {
                     anyhow::bail!(
                         "Command '{}' not allowed on Android mobile runtime. Allowed commands: {}",
@@ -177,7 +179,7 @@ impl RuntimeAdapter for MobileRuntime {
                         allowed.join(", ")
                     );
                 }
-                
+
                 // Build command using Android's shell
                 let mut cmd = tokio::process::Command::new("/system/bin/sh");
                 cmd.arg("-c");
@@ -195,29 +197,55 @@ mod tests {
     #[test]
     fn ios_runtime_has_correct_constraints() {
         let runtime = MobileRuntime::new(MobilePlatform::IOS);
-        
+
         assert_eq!(runtime.name(), "mobile-ios");
-        assert!(!runtime.has_shell_access(), "iOS should not have shell access");
-        assert!(runtime.has_filesystem_access(), "iOS should have scoped filesystem");
-        assert!(!runtime.supports_long_running(), "iOS cannot run long tasks");
-        assert_eq!(runtime.memory_budget(), 50 * 1024 * 1024, "iOS has 50MB budget");
+        assert!(
+            !runtime.has_shell_access(),
+            "iOS should not have shell access"
+        );
+        assert!(
+            runtime.has_filesystem_access(),
+            "iOS should have scoped filesystem"
+        );
+        assert!(
+            !runtime.supports_long_running(),
+            "iOS cannot run long tasks"
+        );
+        assert_eq!(
+            runtime.memory_budget(),
+            50 * 1024 * 1024,
+            "iOS has 50MB budget"
+        );
     }
 
     #[test]
     fn android_runtime_has_correct_constraints() {
         let runtime = MobileRuntime::new(MobilePlatform::Android);
-        
+
         assert_eq!(runtime.name(), "mobile-android");
-        assert!(runtime.has_shell_access(), "Android has limited shell access");
-        assert!(runtime.has_filesystem_access(), "Android has scoped storage");
-        assert!(!runtime.supports_long_running(), "Android cannot run long tasks");
-        assert_eq!(runtime.memory_budget(), 100 * 1024 * 1024, "Android has 100MB budget");
+        assert!(
+            runtime.has_shell_access(),
+            "Android has limited shell access"
+        );
+        assert!(
+            runtime.has_filesystem_access(),
+            "Android has scoped storage"
+        );
+        assert!(
+            !runtime.supports_long_running(),
+            "Android cannot run long tasks"
+        );
+        assert_eq!(
+            runtime.memory_budget(),
+            100 * 1024 * 1024,
+            "Android has 100MB budget"
+        );
     }
 
     #[test]
     fn custom_memory_limit_works() {
         let runtime = MobileRuntime::with_memory_limit(MobilePlatform::Android, 200);
-        
+
         assert_eq!(runtime.memory_budget(), 200 * 1024 * 1024);
         assert_eq!(runtime.platform(), MobilePlatform::Android);
     }
@@ -227,7 +255,7 @@ mod tests {
         let ios1 = MobileRuntime::new(MobilePlatform::IOS);
         let ios2 = MobileRuntime::new(MobilePlatform::IOS);
         let android = MobileRuntime::new(MobilePlatform::Android);
-        
+
         assert_eq!(ios1.platform(), ios2.platform());
         assert_ne!(ios1.platform(), android.platform());
     }
